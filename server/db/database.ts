@@ -3,8 +3,8 @@ import fs from 'fs';
 import path from 'path';
 
 let dbInstance: SqlDatabase | null = null;
-const dbDir = path.resolve(process.cwd(), 'database');
-const dbPath = path.join(dbDir, 'dayflow.sqlite');
+const dbPath = path.resolve(process.env.DATABASE_PATH || 'database/dayflow.sqlite');
+const dbDir = path.dirname(dbPath);
 
 export async function getDb(): Promise<SqlDatabase> {
   if (dbInstance) {
