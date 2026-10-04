@@ -1,0 +1,6 @@
+{
+  "name": "DayFlow - Daily Task & Activity History Management",
+  "description": "A modern daily productivity platform and task history tracker with immutable activity logging, calendar insights, and daily flow analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
