@@ -10,7 +10,7 @@ import {
   TaskStatus,
 } from '../types';
 
-const API_BASE = '/api';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/+$/, '');
 
 function getAuthHeader(): Record<string, string> {
   const token = localStorage.getItem('dayflow_token');
@@ -29,13 +29,26 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers,
   });
 
-  const data = await response.json();
+  const rawText = await response.text();
+  let data: any = null;
 
-  if (!response.ok) {
-    throw new Error(data.message || 'An error occurred during request');
+  if (rawText) {
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      data = { message: rawText };
+    }
   }
 
-  return data;
+  if (!response.ok) {
+    const message =
+      data && typeof data === 'object' && 'message' in data
+        ? String(data.message)
+        : `Request failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  return data as T;
 }
 
 export const api = {

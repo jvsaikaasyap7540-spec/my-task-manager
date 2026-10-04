@@ -47,10 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (name: string, email: string, password: string) => {
-    const res = await api.register(name, email, password);
-    localStorage.setItem('dayflow_token', res.token);
-    setToken(res.token);
-    setUser(res.user);
+    await api.register(name, email, password);
   };
 
   const loginWithGoogle = async (credential: string) => {

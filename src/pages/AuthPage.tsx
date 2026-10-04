@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../store/AuthContext';
-import { Sparkles, Lock, Mail, User as UserIcon } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, Lock, Mail, User as UserIcon } from 'lucide-react';
 
 export const AuthPage: React.FC = () => {
   const { login, register } = useAuth();
@@ -9,12 +9,16 @@ export const AuthPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
 
     const cleanName = name.trim();
     const cleanEmail = email.trim();
@@ -22,12 +26,20 @@ export const AuthPage: React.FC = () => {
       setError('Name must be between 2 and 80 characters.');
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    if (!cleanEmail) {
+      setError('Enter your email address.');
+      return;
+    }
+    if (cleanEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
       setError('Enter a valid email address.');
       return;
     }
-    if (!password || (isRegister && (password.length < 8 || password.length > 72))) {
-      setError(isRegister ? 'Password must be between 8 and 72 characters.' : 'Enter your password.');
+    if (!password) {
+      setError('Enter your password.');
+      return;
+    }
+    if (isRegister && (password.trim().length === 0 || password.length < 8 || password.length > 72)) {
+      setError('Password must be 8-72 characters and cannot be blank.');
       return;
     }
     if (isRegister && password !== confirmPassword) {
@@ -40,6 +52,13 @@ export const AuthPage: React.FC = () => {
     try {
       if (isRegister) {
         await register(cleanName, cleanEmail, password);
+        setIsRegister(false);
+        setEmail(cleanEmail);
+        setPassword('');
+        setConfirmPassword('');
+        setShowPassword(false);
+        setShowConfirmPassword(false);
+        setSuccess('Account created successfully. Please sign in.');
       } else {
         await login(cleanEmail, password);
       }
@@ -69,8 +88,13 @@ export const AuthPage: React.FC = () => {
             {error}
           </div>
         )}
+        {success && (
+          <div role="status" aria-live="polite" className="p-3 mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs">
+            {success}
+          </div>
+        )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           {isRegister && (
             <div>
               <label htmlFor="auth-name" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -105,6 +129,7 @@ export const AuthPage: React.FC = () => {
                 type="email"
                 required
                 autoComplete="email"
+                maxLength={254}
                 placeholder="you@domain.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -121,7 +146,7 @@ export const AuthPage: React.FC = () => {
               <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 id="auth-password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 autoComplete={isRegister ? 'new-password' : 'current-password'}
                 minLength={isRegister ? 8 : undefined}
@@ -129,8 +154,17 @@ export const AuthPage: React.FC = () => {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs md:text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full pl-9 pr-10 py-2 text-xs md:text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((visible) => !visible)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
             {isRegister && (
               <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Use 8-72 characters. Spaces-only passwords are not accepted.</p>
@@ -145,7 +179,7 @@ export const AuthPage: React.FC = () => {
                   <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     id="auth-confirm-password"
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     required
                     autoComplete="new-password"
                     minLength={8}
@@ -153,8 +187,17 @@ export const AuthPage: React.FC = () => {
                     placeholder="Re-enter your password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-xs md:text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-full pl-9 pr-10 py-2 text-xs md:text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((visible) => !visible)}
+                    aria-label={showConfirmPassword ? 'Hide confirmation password' : 'Show confirmation password'}
+                    aria-pressed={showConfirmPassword}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
             )}
@@ -175,6 +218,7 @@ export const AuthPage: React.FC = () => {
             onClick={() => {
               setIsRegister(!isRegister);
               setError(null);
+              setSuccess(null);
             }}
             className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
           >
