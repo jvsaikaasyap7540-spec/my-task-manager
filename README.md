@@ -243,7 +243,9 @@ The Vercel deployment serves the frontend; it does not run this Express API. To 
 1. In Render, create a Blueprint from this repository and use the included `render.yaml`. It creates a Node web service with a persistent disk mounted at `/var/data`.
 2. In the Render service environment, set `FRONTEND_URL` to the Vercel site origin, such as `https://amma.vercel.app` (no trailing slash). Add any other frontend origins that need access as a comma-separated list.
 3. Deploy the service and verify that `https://<render-service>.onrender.com/api/health` returns JSON with `"status":"ok"`.
-4. In the Vercel project settings, set `VITE_API_BASE_URL` to `https://<render-service>.onrender.com/api`, then redeploy the frontend so the build picks up the variable.
+4. In the Vercel project settings, set `VITE_API_BASE_URL` to `https://<render-service>.onrender.com/api`, then redeploy the frontend so the build picks up the variable. Without this setting, login and other API requests go to Vercel's frontend host and may return `NOT_FOUND`.
+
+Login and registration validate email address syntax in both the browser and API. This confirms the address is properly formatted; it does not verify that the mailbox exists or belongs to the user.
 
 Render generates the backend `JWT_SECRET` and stores SQLite data at `/var/data/dayflow.sqlite` on the attached persistent disk. Keep the generated secret stable across deployments; changing it invalidates existing login tokens.
 

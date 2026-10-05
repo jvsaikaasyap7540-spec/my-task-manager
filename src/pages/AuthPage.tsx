@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../store/AuthContext';
 import { Eye, EyeOff, Sparkles, Lock, Mail, User as UserIcon } from 'lucide-react';
+import { isValidEmail } from '../../utils/email.ts';
 
 export const AuthPage: React.FC = () => {
   const { login, register } = useAuth();
@@ -30,7 +31,7 @@ export const AuthPage: React.FC = () => {
       setError('Enter your email address.');
       return;
     }
-    if (cleanEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    if (!isValidEmail(cleanEmail)) {
       setError('Enter a valid email address.');
       return;
     }

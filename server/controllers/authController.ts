@@ -6,9 +6,9 @@ import { queryOne, execute } from '../db/database.ts';
 import { generateToken } from '../utils/jwt.ts';
 import { UserRecord } from '../types/index.ts';
 import { AuthenticatedRequest } from '../middleware/auth.ts';
+import { isValidEmail } from '../../utils/email.ts';
 
 const googleOAuthClient = new OAuth2Client();
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function register(req: Request, res: Response): Promise<void> {
   try {
@@ -30,7 +30,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    if (!emailPattern.test(cleanEmail) || cleanEmail.length > 254) {
+    if (!isValidEmail(cleanEmail)) {
       res.status(422).json({ success: false, message: 'Enter a valid email address' });
       return;
     }
@@ -101,7 +101,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    if (!emailPattern.test(cleanEmail) || cleanEmail.length > 254) {
+    if (!isValidEmail(cleanEmail)) {
       res.status(422).json({ success: false, message: 'Enter a valid email address' });
       return;
     }

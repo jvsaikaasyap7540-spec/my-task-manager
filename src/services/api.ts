@@ -29,6 +29,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers,
   });
 
+  const contentType = response.headers.get('content-type') ?? '';
   const rawText = await response.text();
   let data: any = null;
 
@@ -41,6 +42,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   if (!response.ok) {
+    if (response.status === 404 && !contentType.includes('application/json')) {
+      throw new Error('The DayFlow API could not be found. Set VITE_API_BASE_URL to your deployed API URL and redeploy the frontend.');
+    }
+
     const message =
       data && typeof data === 'object' && 'message' in data
         ? String(data.message)
