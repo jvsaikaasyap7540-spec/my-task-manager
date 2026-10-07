@@ -8,7 +8,8 @@ import historyRoutes from './server/routes/historyRoutes.ts';
 import calendarRoutes from './server/routes/calendarRoutes.ts';
 import analyticsRoutes from './server/routes/analyticsRoutes.ts';
 import seedRoutes from './server/routes/seedRoutes.ts';
-import { getDb } from './server/db/database.ts';
+import { runWithDatabase } from './server/db/database.ts';
+import { initializeSqlite } from './server/db/sqlite.ts';
 import { ensureDemoAccount, removeDemoSeedTasks } from './server/seed.ts';
 import { startPendingTaskAlertScheduler } from './server/services/pendingTaskAlertService.ts';
 
@@ -45,11 +46,16 @@ async function startServer() {
   app.use(express.json());
 
   // Initialize SQLite database
-  await getDb();
+  const database = await initializeSqlite();
+  await runWithDatabase(database, async () => {
+    await ensureDemoAccount();
+    await removeDemoSeedTasks();
+  });
+  startPendingTaskAlertScheduler(database);
 
-  await ensureDemoAccount();
-  await removeDemoSeedTasks();
-  startPendingTaskAlertScheduler();
+  app.use((req, res, next) => {
+    runWithDatabase(database, next);
+  });
 
   // Mount API endpoints
   app.use('/api/auth', authRoutes);

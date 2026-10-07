@@ -238,13 +238,47 @@ npm run start
 
 The start script sets `NODE_ENV=production` through a cross-platform launcher, so it works on Windows as well as Linux.
 
-### Deploy the frontend to Cloudflare Pages
+### Deploy the full app to Cloudflare Workers and D1
 
-This repository uses npm and `package-lock.json` for dependency installation. In the Cloudflare Pages project, configure the root directory as `/`, the install command as `npm ci`, the build command as `npm run build`, and the build output directory as `dist`. Set `VITE_API_BASE_URL` to the deployed API URL ending in `/api`, then redeploy the frontend. Cloudflare Pages hosts the built frontend; deploy the Express API separately.
+The Cloudflare Worker serves both the built frontend and the API, with D1 replacing SQLite in production. The existing Express/SQLite server remains available for local development. This deploy path starts with a fresh D1 database; it does not import records from a local SQLite file.
 
-### Deploy the backend to Render
+1. In Cloudflare, create a D1 database named `dayflow-db` and copy the `database_id` returned by:
 
-The Vercel deployment serves the frontend; it does not run this Express API. To deploy the API with durable SQLite storage:
+   ```bash
+   npx wrangler d1 create dayflow-db
+   ```
+
+2. Replace the placeholder `database_id` in `wrangler.jsonc` with the returned ID.
+3. Apply the schema to the remote database:
+
+   ```bash
+   npm ci
+   npm run db:migrate:remote
+   ```
+
+4. Add the required Worker secret:
+
+   ```bash
+   npx wrangler secret put JWT_SECRET
+   ```
+
+   Enter a unique, long random value when prompted. Never commit this value. To enable Google sign-in, configure `GOOGLE_CLIENT_ID` as a Worker variable or secret using the same Web Client ID configured in the frontend.
+5. Build and deploy the Worker and frontend assets:
+
+   ```bash
+   npm run deploy:cloudflare
+   ```
+
+   For Git-connected automatic deployment, configure Cloudflare Workers Builds to install with `npm ci`, build with `npm run build`, and deploy with `npx wrangler deploy`. Make sure Wrangler is authenticated and the D1 database ID is committed in `wrangler.jsonc`.
+6. Open `https://<your-worker-domain>/api/health`; it should return JSON with `"status":"ok"`. The API and frontend share this origin, so leave `VITE_API_BASE_URL` unset or set it to `/api` in the Worker build environment.
+
+For local Worker testing, create an ignored `.dev.vars` file containing `JWT_SECRET=<local-random-value>`, then run `npm run db:migrate:local`, `npm run build`, and `npm run dev:cloudflare`.
+
+The Worker-compatible API retains registration, password and Google sign-in, tasks, calendar, history, analytics, and demo reset. SMTP-based pending-task email alerts are not run on Workers; the existing Express server continues to support those alerts in local or Node.js deployments.
+
+### Alternative: deploy the Node.js backend to Render
+
+Use this option if you want the Express/SQLite server instead of the Cloudflare Worker/D1 deployment:
 
 1. In Render, create a Blueprint from this repository and use the included `render.yaml`. It creates a Node web service with a persistent disk mounted at `/var/data`.
 2. In the Render service environment, set `FRONTEND_URL` to the Vercel site origin, such as `https://amma.vercel.app` (no trailing slash). Add any other frontend origins that need access as a comma-separated list.

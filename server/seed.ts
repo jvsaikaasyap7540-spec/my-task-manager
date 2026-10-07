@@ -25,12 +25,21 @@ async function getOrCreateDemoUser(): Promise<string> {
   const now = new Date().toISOString();
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash('password123', salt);
-  await execute(
-    `INSERT INTO users (id, name, email, passwordHash, createdAt, updatedAt)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [demoUserId, 'Alex Morgan', demoEmail, passwordHash, now, now]
-  );
-  return demoUserId;
+  try {
+    await execute(
+      `INSERT INTO users (id, name, email, passwordHash, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [demoUserId, 'Alex Morgan', demoEmail, passwordHash, now, now]
+    );
+    return demoUserId;
+  } catch (error) {
+    const concurrentlyCreatedUser = await queryOne<{ id: string }>(
+      `SELECT id FROM users WHERE email = ?`,
+      [demoEmail]
+    );
+    if (concurrentlyCreatedUser) return concurrentlyCreatedUser.id;
+    throw error;
+  }
 }
 
 export async function ensureDemoAccount(): Promise<void> {

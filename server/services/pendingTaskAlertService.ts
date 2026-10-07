@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { execute, query } from '../db/database.ts';
+import { DatabaseAdapter, runWithDatabase } from '../db/database.ts';
 
 interface PendingTaskAlertRecord {
   id: string;
@@ -100,8 +101,9 @@ export async function sendPendingTaskAlerts(): Promise<void> {
   }
 }
 
-export function startPendingTaskAlertScheduler(): void {
-  void sendPendingTaskAlerts();
-  const interval = setInterval(() => void sendPendingTaskAlerts(), 60_000);
+export function startPendingTaskAlertScheduler(database: DatabaseAdapter): void {
+  const run = () => runWithDatabase(database, () => sendPendingTaskAlerts());
+  void run();
+  const interval = setInterval(() => void run(), 60_000);
   interval.unref();
 }

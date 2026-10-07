@@ -4,6 +4,10 @@ import { AuthTokenPayload } from '../types/index.ts';
 
 export interface AuthenticatedRequest extends Request {
   user?: AuthTokenPayload;
+  env?: {
+    JWT_SECRET?: string;
+    GOOGLE_CLIENT_ID?: string;
+  };
 }
 
 export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction): void {

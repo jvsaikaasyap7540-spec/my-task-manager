@@ -1,16 +1,16 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
-import { OAuth2Client } from 'google-auth-library';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { queryOne, execute } from '../db/database.ts';
 import { generateToken } from '../utils/jwt.ts';
 import { UserRecord } from '../types/index.ts';
 import { AuthenticatedRequest } from '../middleware/auth.ts';
 import { isValidEmail } from '../../utils/email.ts';
 
-const googleOAuthClient = new OAuth2Client();
+const googleJwks = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 
-export async function register(req: Request, res: Response): Promise<void> {
+export async function register(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { name, email, password } = req.body ?? {};
 
@@ -67,7 +67,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       userId: id,
       email: cleanEmail,
       name: cleanName,
-    });
+    }, req.env?.JWT_SECRET);
 
     res.status(201).json({
       success: true,
@@ -88,7 +88,7 @@ export async function register(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function login(req: Request, res: Response): Promise<void> {
+export async function login(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { email, password } = req.body ?? {};
 
@@ -128,7 +128,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       userId: user.id,
       email: user.email,
       name: user.name,
-    });
+    }, req.env?.JWT_SECRET);
 
     res.json({
       success: true,
@@ -148,8 +148,8 @@ export async function login(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function googleLogin(req: Request, res: Response): Promise<void> {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
+export async function googleLogin(req: AuthenticatedRequest, res: Response): Promise<void> {
+  const clientId = req.env?.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
   const credential = req.body?.credential;
 
   if (!clientId) {
@@ -162,9 +162,11 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    const ticket = await googleOAuthClient.verifyIdToken({ idToken: credential, audience: clientId });
-    const payload = ticket.getPayload();
-    if (!payload?.sub || !payload.email || payload.email_verified !== true) {
+    const { payload } = await jwtVerify(credential, googleJwks, {
+      audience: clientId,
+      issuer: ['https://accounts.google.com', 'accounts.google.com'],
+    });
+    if (!payload.sub || typeof payload.email !== 'string' || payload.email_verified !== true) {
       res.status(401).json({ success: false, message: 'Google account email must be verified' });
       return;
     }
@@ -184,7 +186,7 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
         user.googleId = payload.sub;
       } else {
         const id = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-        const name = payload.name?.trim() || cleanEmail.split('@')[0];
+        const name = typeof payload.name === 'string' ? payload.name.trim() || cleanEmail.split('@')[0] : cleanEmail.split('@')[0];
         const passwordHash = await bcrypt.hash(randomBytes(32).toString('hex'), 10);
         await execute(
           `INSERT INTO users (id, name, email, googleId, passwordHash, createdAt, updatedAt)
@@ -195,7 +197,7 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
       }
     }
 
-    const token = generateToken({ userId: user.id, email: user.email, name: user.name });
+    const token = generateToken({ userId: user.id, email: user.email, name: user.name }, req.env?.JWT_SECRET);
     res.json({
       success: true,
       token,
