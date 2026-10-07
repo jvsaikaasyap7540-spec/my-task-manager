@@ -22,8 +22,6 @@ export const TodayTasksPage: React.FC = () => {
     setStatusFilter,
     priorityFilter,
     setPriorityFilter,
-    categoryFilter,
-    setCategoryFilter,
   } = useTasks();
 
   // Tasks belonging to today
@@ -43,10 +41,9 @@ export const TodayTasksPage: React.FC = () => {
       }
       if (statusFilter !== 'ALL' && t.status !== statusFilter) return false;
       if (priorityFilter !== 'ALL' && t.priority !== priorityFilter) return false;
-      if (categoryFilter !== 'ALL' && t.category !== categoryFilter) return false;
       return true;
     });
-  }, [todayTasks, searchQuery, statusFilter, priorityFilter, categoryFilter]);
+  }, [todayTasks, searchQuery, statusFilter, priorityFilter]);
 
   const total = todayTasks.length;
   const completed = todayTasks.filter((t) => t.status === 'COMPLETED').length;
@@ -136,28 +133,13 @@ export const TodayTasksPage: React.FC = () => {
             <option value="URGENT">Urgent</option>
           </select>
 
-          {/* Category dropdown */}
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="min-w-0 w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 sm:w-auto"
-          >
-            <option value="ALL">All Categories</option>
-            <option value="Work">Work</option>
-            <option value="Personal">Personal</option>
-            <option value="Learning">Learning</option>
-            <option value="Shopping">Shopping</option>
-            <option value="Health">Health</option>
-            <option value="Other">Other</option>
-          </select>
         </div>
 
-        {(statusFilter !== 'ALL' || priorityFilter !== 'ALL' || categoryFilter !== 'ALL') && (
+        {(statusFilter !== 'ALL' || priorityFilter !== 'ALL') && (
           <button
             onClick={() => {
               setStatusFilter('ALL');
               setPriorityFilter('ALL');
-              setCategoryFilter('ALL');
             }}
             className="self-end text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400 sm:ml-auto"
           >

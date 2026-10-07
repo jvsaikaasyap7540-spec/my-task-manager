@@ -17,6 +17,7 @@ interface TaskContextType {
   todayDate: string;
   tasks: Task[];
   allTasks: Task[];
+  taskRevision: number;
   loading: boolean;
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
@@ -84,6 +85,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const previousTodayRef = useRef(todayDate);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [taskRevision, setTaskRevision] = useState(0);
   const [tasksUserId, setTasksUserId] = useState<string | null>(null);
   const latestFetchId = useRef(0);
   const [loading, setLoading] = useState<boolean>(false);
@@ -215,6 +217,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await api.createTask(data);
       await fetchTasks();
+      setTaskRevision((revision) => revision + 1);
       addToast('Task created successfully', `"${res.task.title}" is due ${res.task.dueDate}.`, 'success');
     } catch (err: any) {
       addToast('Creation Failed', err.message, 'error');
@@ -239,6 +242,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await api.updateTask(id, data);
       addToast('Task Updated', `Changes recorded in activity history`, 'success');
       await fetchTasks();
+      setTaskRevision((revision) => revision + 1);
       if (selectedTaskForHistory && selectedTaskForHistory.id === id) {
         setSelectedTaskForHistory(res.task);
       }
@@ -255,11 +259,13 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addToast('Task Reopened', `"${task.title}" marked as pending`, 'info');
         setTasks(prev => prev.map(t => (t.id === task.id ? res.task : t)));
         setAllTasks(prev => prev.map(t => (t.id === task.id ? res.task : t)));
+        setTaskRevision((revision) => revision + 1);
       } else {
         const res = await api.completeTask(task.id);
         addToast('Task Completed 🎉', `"${task.title}" finished!`, 'success');
         setTasks(prev => prev.map(t => (t.id === task.id ? res.task : t)));
         setAllTasks(prev => prev.map(t => (t.id === task.id ? res.task : t)));
+        setTaskRevision((revision) => revision + 1);
       }
       // Background full sync to refresh summaries
       fetchTasks();
@@ -274,6 +280,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addToast('Task Deleted', `Archived in history. History is never lost.`, 'info');
       setTasks(prev => prev.filter(t => t.id !== id));
       setAllTasks(prev => prev.filter(t => t.id !== id));
+      setTaskRevision((revision) => revision + 1);
       setTaskToDelete(null);
       fetchTasks();
     } catch (err: any) {
@@ -292,6 +299,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         todayDate,
         tasks: visibleTasks,
         allTasks: visibleAllTasks,
+        taskRevision,
         loading,
         activeTab,
         setActiveTab,

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export const HistoryPage: React.FC = () => {
-  const { todayDate, setSelectedTaskForHistory } = useTasks();
+  const { todayDate, taskRevision, setSelectedTaskForHistory, setTaskToDelete } = useTasks();
   const [selectedDate, setSelectedDate] = useState<string>(todayDate);
   const [historyData, setHistoryData] = useState<DayHistoryData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -31,7 +31,7 @@ export const HistoryPage: React.FC = () => {
       .getHistoryDays()
       .then((res) => setHistoryDays(res.days))
       .catch((err) => console.error('Failed to load history days', err));
-  }, []);
+  }, [taskRevision]);
 
   // Fetch detailed data for selected date
   useEffect(() => {
@@ -44,7 +44,7 @@ export const HistoryPage: React.FC = () => {
         setHistoryData(null);
       })
       .finally(() => setLoading(false));
-  }, [selectedDate]);
+  }, [selectedDate, taskRevision]);
 
   const changeDate = (daysDelta: number) => {
     const d = new Date(selectedDate + 'T12:00:00Z');
@@ -249,7 +249,7 @@ export const HistoryPage: React.FC = () => {
                           )}
                         </span>
 
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <h4
                             className={`text-xs md:text-sm font-semibold truncate ${
                               isDeleted
@@ -288,15 +288,31 @@ export const HistoryPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedTaskForHistory(task);
-                        }}
-                        className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline shrink-0 font-medium"
-                      >
-                        Audit Details
-                      </button>
+                      <div className="flex shrink-0 items-center gap-3">
+                        {!isDeleted && (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setTaskToDelete(task);
+                            }}
+                            aria-label={`Delete ${task.title}`}
+                            title="Delete task"
+                            className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedTaskForHistory(task);
+                          }}
+                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                        >
+                          Audit Details
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );

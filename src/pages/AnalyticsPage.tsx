@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { useTasks } from '../store/TaskContext';
 import { AnalyticsData } from '../types';
 import {
   BarChart3,
@@ -28,6 +29,7 @@ import {
 } from 'recharts';
 
 export const AnalyticsPage: React.FC = () => {
+  const { taskRevision } = useTasks();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -38,7 +40,7 @@ export const AnalyticsPage: React.FC = () => {
       .then((res) => setData(res.analytics))
       .catch((err) => console.error('Failed to load analytics', err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [taskRevision]);
 
   if (loading || !data) {
     return (

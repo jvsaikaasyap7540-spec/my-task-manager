@@ -12,8 +12,8 @@ import {
 } from 'lucide-react';
 
 export const CalendarPage: React.FC = () => {
-  const { todayDate, setCurrentDate, setActiveTab } = useTasks();
-  const [currentMonth, setCurrentMonth] = useState('2026-09'); // YYYY-MM
+  const { todayDate, taskRevision, setCurrentDate, setActiveTab } = useTasks();
+  const [currentMonth, setCurrentMonth] = useState(() => todayDate.slice(0, 7));
   const [daysData, setDaysData] = useState<Record<string, CalendarMonthDay>>({});
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +30,7 @@ export const CalendarPage: React.FC = () => {
       })
       .catch((err) => console.error('Failed to load calendar month', err))
       .finally(() => setLoading(false));
-  }, [currentMonth]);
+  }, [currentMonth, taskRevision]);
 
   const changeMonth = (delta: number) => {
     const [yearStr, monthStr] = currentMonth.split('-');
