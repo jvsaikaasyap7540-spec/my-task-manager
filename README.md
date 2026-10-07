@@ -238,6 +238,10 @@ npm run start
 
 The start script sets `NODE_ENV=production` through a cross-platform launcher, so it works on Windows as well as Linux.
 
+### Deploy the frontend to Cloudflare Pages
+
+This repository uses npm and `package-lock.json` for dependency installation. In the Cloudflare Pages project, configure the root directory as `/`, the install command as `npm ci`, the build command as `npm run build`, and the build output directory as `dist`. Set `VITE_API_BASE_URL` to the deployed API URL ending in `/api`, then redeploy the frontend. Cloudflare Pages hosts the built frontend; deploy the Express API separately.
+
 ### Deploy the backend to Render
 
 The Vercel deployment serves the frontend; it does not run this Express API. To deploy the API with durable SQLite storage:
