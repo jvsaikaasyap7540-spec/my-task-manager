@@ -4,13 +4,13 @@ import { TaskPriority, TaskStatus } from '../../types';
 import { X, Sparkles, Calendar, Clock, AlertCircle } from 'lucide-react';
 
 export const AddTaskModal: React.FC = () => {
-  const { isAddTaskOpen, setIsAddTaskOpen, createTask, currentDate, todayDate } = useTasks();
+  const { isAddTaskOpen, setIsAddTaskOpen, createTask, todayDate } = useTasks();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
-  const [startDate, setStartDate] = useState(currentDate || todayDate);
-  const [dueDate, setDueDate] = useState(currentDate || todayDate);
+  const [startDate, setStartDate] = useState(todayDate);
+  const [dueDate, setDueDate] = useState(todayDate);
   const [dueTime, setDueTime] = useState('');
   const [status, setStatus] = useState<TaskStatus>('PENDING');
   const [submitting, setSubmitting] = useState(false);
@@ -21,13 +21,13 @@ export const AddTaskModal: React.FC = () => {
       setTitle('');
       setDescription('');
       setPriority('MEDIUM');
-      setStartDate(currentDate || todayDate);
-      setDueDate(currentDate || todayDate);
+      setStartDate(todayDate);
+      setDueDate(todayDate);
       setDueTime('');
       setStatus('PENDING');
       setError(null);
     }
-  }, [isAddTaskOpen, currentDate, todayDate]);
+  }, [isAddTaskOpen]);
 
   if (!isAddTaskOpen) return null;
 
@@ -158,8 +158,11 @@ export const AddTaskModal: React.FC = () => {
                   type="date"
                   required
                   value={startDate}
-                  max={dueDate || undefined}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => {
+                    const nextStartDate = e.target.value;
+                    setStartDate(nextStartDate);
+                    if (nextStartDate > dueDate) setDueDate(nextStartDate);
+                  }}
                   className="w-full px-3 py-2 text-xs md:text-sm font-mono tabular-nums rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>

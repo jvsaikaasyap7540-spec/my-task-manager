@@ -99,20 +99,20 @@ export const TodayTasksPage: React.FC = () => {
       </div>
 
       {/* Multi-Filter Bar */}
-      <div className="flex flex-wrap items-center gap-2 p-2 rounded-xl bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800/80 text-xs">
-        <div className="flex items-center gap-1.5">
-          <span className="text-slate-400 flex items-center gap-1 pl-1">
+      <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-slate-200/80 bg-slate-100/70 p-2 text-xs dark:border-slate-800/80 dark:bg-slate-800/40 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="grid min-w-0 w-full flex-1 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-1.5">
+          <span className="col-span-2 flex items-center gap-1 pl-1 text-slate-400 sm:col-span-1">
             <Filter className="w-3.5 h-3.5" />
             Filters:
           </span>
 
           {/* Status buttons */}
-          <div className="flex items-center bg-white dark:bg-slate-900 rounded-lg p-0.5 border border-slate-200 dark:border-slate-700">
+          <div className="col-span-2 grid min-w-0 grid-cols-4 items-stretch rounded-lg border border-slate-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-900 sm:col-span-1 sm:flex sm:items-center">
             {['ALL', 'PENDING', 'IN_PROGRESS', 'COMPLETED'].map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                className={`min-w-0 rounded px-1 py-1 text-center text-[11px] leading-tight font-medium transition-colors sm:px-2 sm:py-0.5 sm:text-xs ${
                   statusFilter === st
                     ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 font-semibold'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
@@ -127,7 +127,7 @@ export const TodayTasksPage: React.FC = () => {
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300"
+            className="min-w-0 w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 sm:w-auto"
           >
             <option value="ALL">All Priorities</option>
             <option value="LOW">Low</option>
@@ -140,7 +140,7 @@ export const TodayTasksPage: React.FC = () => {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300"
+            className="min-w-0 w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 sm:w-auto"
           >
             <option value="ALL">All Categories</option>
             <option value="Work">Work</option>
@@ -159,7 +159,7 @@ export const TodayTasksPage: React.FC = () => {
               setPriorityFilter('ALL');
               setCategoryFilter('ALL');
             }}
-            className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium text-xs ml-auto"
+            className="self-end text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400 sm:ml-auto"
           >
             Reset
           </button>

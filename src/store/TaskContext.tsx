@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Task, ActiveTab, TaskPriority, TaskCategory, TaskStatus } from '../types';
 import { api } from '../services/api';
 import { useAuth } from './AuthContext';
+import { getLocalDateString } from '../utils/date';
 
 export interface ToastMessage {
   id: string;
@@ -78,10 +79,13 @@ const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
 export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const todayDate = '2026-09-25'; // Synchronized with AI Studio runtime date
-  const [currentDate, setCurrentDate] = useState<string>(todayDate);
+  const [todayDate, setTodayDate] = useState<string>(() => getLocalDateString());
+  const [currentDate, setCurrentDate] = useState<string>(() => getLocalDateString());
+  const previousTodayRef = useRef(todayDate);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [tasksUserId, setTasksUserId] = useState<string | null>(null);
+  const latestFetchId = useRef(0);
   const [loading, setLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
 
@@ -112,6 +116,29 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('dayflow_theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    const refreshToday = () => {
+      const nextToday = getLocalDateString();
+      const previousToday = previousTodayRef.current;
+      if (nextToday === previousToday) return;
+
+      previousTodayRef.current = nextToday;
+      setTodayDate(nextToday);
+      setCurrentDate((previousCurrentDate) =>
+        previousCurrentDate === previousToday ? nextToday : previousCurrentDate
+      );
+    };
+
+    const intervalId = window.setInterval(refreshToday, 60_000);
+    window.addEventListener('focus', refreshToday);
+    document.addEventListener('visibilitychange', refreshToday);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', refreshToday);
+      document.removeEventListener('visibilitychange', refreshToday);
+    };
+  }, []);
+
   const toggleTheme = () => {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
@@ -129,7 +156,16 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const fetchTasks = useCallback(async () => {
-    if (!user) return;
+    const fetchId = ++latestFetchId.current;
+    if (!user) {
+      setTasks([]);
+      setAllTasks([]);
+      setTasksUserId(null);
+      setLoading(false);
+      return;
+    }
+
+    const requestedUserId = user.id;
     setLoading(true);
     try {
       // Fetch tasks for current view
@@ -138,18 +174,29 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         date: dateParam,
         includeDeleted: false,
       });
-      setTasks(res.tasks);
 
       // Fetch all tasks for stats & search
       const allRes = await api.getTasks({ includeDeleted: false });
+      if (fetchId !== latestFetchId.current) return;
+      setTasks(res.tasks);
       setAllTasks(allRes.tasks);
+      setTasksUserId(requestedUserId);
     } catch (err: any) {
+      if (fetchId !== latestFetchId.current) return;
       console.error('Error fetching tasks:', err);
       addToast('Sync Error', 'Failed to retrieve tasks from server', 'error');
     } finally {
-      setLoading(false);
+      if (fetchId === latestFetchId.current) setLoading(false);
     }
   }, [user, currentDate, activeTab, todayDate, addToast]);
+
+  useEffect(() => {
+    latestFetchId.current += 1;
+    setTasks([]);
+    setAllTasks([]);
+    setTasksUserId(null);
+    setLoading(Boolean(user));
+  }, [user?.id]);
 
   useEffect(() => {
     fetchTasks();
@@ -234,14 +281,17 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const visibleTasks = tasksUserId === user?.id ? tasks : [];
+  const visibleAllTasks = tasksUserId === user?.id ? allTasks : [];
+
   return (
     <TaskContext.Provider
       value={{
         currentDate,
         setCurrentDate,
         todayDate,
-        tasks,
-        allTasks,
+        tasks: visibleTasks,
+        allTasks: visibleAllTasks,
         loading,
         activeTab,
         setActiveTab,
