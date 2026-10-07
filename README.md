@@ -236,6 +236,8 @@ npm run build
 npm run start
 ```
 
+The start script sets `NODE_ENV=production` through a cross-platform launcher, so it works on Windows as well as Linux.
+
 ### Deploy the backend to Render
 
 The Vercel deployment serves the frontend; it does not run this Express API. To deploy the API with durable SQLite storage:
